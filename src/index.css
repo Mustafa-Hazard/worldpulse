@@ -401,8 +401,6 @@ body {
   color: var(--text);
 }
 
-.alternatives {}
-
 .alt-label {
   font-family: var(--mono);
   font-size: 0.7rem;
