@@ -1,122 +1,75 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useCountry } from './hooks/useCountry.js';
+import SearchBar from './components/SearchBar.jsx';
+import CountryCard from './components/CountryCard.jsx';
+import WeatherPanel from './components/WeatherPanel.jsx';
+import ForecastChart from './components/ForecastChart.jsx';
+import StatusMessage from './components/StatusMessage.jsx';
+import CacheDebug from './components/CacheDebug.jsx';
+import './index.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const { query, search, data, status, error } = useCountry();
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      <header className="header">
+        <div className="header-inner">
+          <div className="logo">
+            <span className="logo-icon">🌍</span>
+            <span className="logo-text">WorldPulse</span>
+          </div>
+          <p className="tagline">Live weather + country intelligence — no API key needed</p>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
+      <main className="main">
+        <SearchBar value={query} onChange={search} status={status} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {status === 'idle' && !data && (
+          <div className="hero-prompt">
+            <p>Search any country — try{' '}
+              <button className="inline-btn" onClick={() => search('Japan')}>Japan</button>,{' '}
+              <button className="inline-btn" onClick={() => search('Brazil')}>Brazil</button>, or{' '}
+              <button className="inline-btn" onClick={() => search('Nigeria')}>Nigeria</button>
+            </p>
+          </div>
+        )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <StatusMessage status={status} error={error} />
+
+        {status === 'success' && data && (
+          <div className="results">
+            <div className="results-top">
+              <CountryCard country={data.country} />
+              <WeatherPanel weather={data.weather} weatherError={data.weatherError} />
+            </div>
+
+            {data.weather?.daily && (
+              <ForecastChart daily={data.weather.daily} />
+            )}
+
+            {data.alternatives?.length > 0 && (
+              <div className="alternatives">
+                <p className="alt-label">Other matches:</p>
+                <div className="alt-list">
+                  {data.alternatives.map((c) => (
+                    <button
+                      key={c.cca3}
+                      className="alt-btn"
+                      onClick={() => search(c.name.common)}
+                    >
+                      <img src={c.flags?.svg} alt="" className="alt-flag" />
+                      {c.name.common}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      <CacheDebug />
+    </div>
+  );
 }
-
-export default App
