@@ -1,16 +1,70 @@
-# React + Vite
+# WorldPulse
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Live weather + country intelligence for any nation on Earth. No API key. No backend. Just open it.
 
-Currently, two official plugins are available:
+Combines **REST Countries API** and **Open-Meteo** (both free, no auth) to give you a full country profile and 7-day weather forecast in one search.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Run it (fresh machine)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Requirements:** Node.js >= 18
 
-## Expanding the ESLint configuration
+```bash
+git clone <your-repo-url>
+cd worldpulse
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Open http://localhost:5173 in your browser.
+
+To build for production:
+
+```bash
+npm run build
+npm run preview
+```
+
+No `.env` file needed. Both APIs are public and require zero credentials.
+
+---
+
+## What it does
+
+- Search any country by name (debounced, 400ms)
+- Fetches country info + weather **in parallel** — not sequentially
+- In-memory LRU cache (50 entries, 5-min TTL) — repeat searches skip the network entirely
+- **Request deduplication** — two simultaneous requests for the same key fire exactly one HTTP call
+- 8-second timeout on all fetches — a slow API won't hang the UI indefinitely
+- If weather fails, country data still renders (graceful degradation)
+- 7-day forecast chart
+- Live cache stats widget in the bottom-right corner
+
+---
+
+## Stack
+
+React + Vite. No backend. See ANSWERS.md for rationale.
+
+---
+
+## Project structure
+
+```
+src/
+  lib/
+    cache.js       <- LRU cache with TTL + request deduplication
+    api.js         <- REST Countries + Open-Meteo, timeout, graceful degradation
+  hooks/
+    useCountry.js  <- debounced search, race condition guard
+  components/
+    SearchBar.jsx
+    CountryCard.jsx
+    WeatherPanel.jsx
+    ForecastChart.jsx
+    StatusMessage.jsx
+    CacheDebug.jsx  <- live cache stats
+  App.jsx
+  index.css
+```
