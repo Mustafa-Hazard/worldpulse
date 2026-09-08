@@ -49,6 +49,48 @@ async function fetchWithRetry(url, options = {}, retries = 2, delays = [150, 300
 }
 
 /**
+ * Instant synchronous suggestion lookup for the autocomplete dropdown.
+ * Runs in <1ms directly against in-memory dataset.
+ */
+export function getCountrySuggestions(query, limit = 8) {
+    if (!query || query.trim().length < 1) return [];
+    const q = query.trim().toLowerCase();
+
+    const exact = [];
+    const prefix = [];
+    const contains = [];
+
+    for (const c of countriesData) {
+        const common = c.name.common.toLowerCase();
+        const capital = (c.capital?.[0] ?? '').toLowerCase();
+        const cca3 = c.cca3.toLowerCase();
+
+        const item = {
+            name: c.name.common,
+            official: c.name.official,
+            capital: c.capital?.[0] || '',
+            region: c.region,
+            flag: c.flags?.svg,
+            cca3: c.cca3,
+        };
+
+        if (common === q || cca3 === q) {
+            exact.push(item);
+        } else if (common.startsWith(q) || capital.startsWith(q)) {
+            prefix.push(item);
+        } else if (common.includes(q) || capital.includes(q)) {
+            contains.push(item);
+        }
+
+        if (exact.length + prefix.length + contains.length >= limit * 2) {
+            break;
+        }
+    }
+
+    return [...exact, ...prefix, ...contains].slice(0, limit);
+}
+
+/**
  * Search countries locally using our zero-auth dataset.
  */
 export async function searchCountries(query) {
@@ -116,7 +158,7 @@ async function fetchWeather(lat, lng) {
 }
 
 /**
- * Fetch Air Quality Index (AQI) from Open-Meteo (Zero Auth).
+ * Fetch Air Quality Index (AQI) from Open-Meteo.
  */
 export async function fetchAirQuality(lat, lng) {
     const cacheKey = `aqi:${lat.toFixed(2)}:${lng.toFixed(2)}`;
@@ -131,7 +173,7 @@ export async function fetchAirQuality(lat, lng) {
 }
 
 /**
- * Fetch real-time currency exchange rates (USD base, Zero Auth).
+ * Fetch real-time currency exchange rates (USD base).
  */
 export async function fetchExchangeRates() {
     const cacheKey = 'fx:rates:latest';
@@ -185,9 +227,6 @@ export function getRandomCountry() {
     return pick?.name.common || 'Japan';
 }
 
-/**
- * AQI rating evaluation.
- */
 export function getAqiRating(aqi) {
     if (aqi == null) return { level: 'N/A', color: '#71717a' };
     if (aqi <= 50) return { level: 'Good', color: '#10b981' };
